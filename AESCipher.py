@@ -2,6 +2,7 @@ import base64
 import hashlib
 from Crypto import Random
 from Crypto.Cipher import AES
+import re
 
 class AESCipher:
 
@@ -10,6 +11,7 @@ class AESCipher:
         self.TAkey = hashlib.sha256(keySeed2.encode()).digest()
 
     def encrypt(self, data):
+        data = re.sub('\s+',' ',data)
         data = self.pad(data)
         iv = Random.new().read(16)
         cipher = AES.new(self.skey, AES.MODE_CBC, iv)

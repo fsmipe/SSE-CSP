@@ -3,8 +3,9 @@ import CSP
 
 def main():
     firstDO = DataOwner.DataOwner("exampleSeed1", "exampleSeed2")
-    c = CSP.initialize()
-    CSP.test(c)
+    firstDO.InGen("LocalFiles", "CSPFiles")
+
+    CSP.printDB(CSP.initialize())
 
 
 if __name__ == "__main__":
