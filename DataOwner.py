@@ -6,6 +6,7 @@ from itertools import chain
 import hashlib
 import string
 
+
 class DataOwner:
     # This operates as KeyGen function
     def __init__(self, seed1, seed2):
@@ -13,34 +14,40 @@ class DataOwner:
         self.allMap = {}
         self.connection = CSP.initialize()
 
-
     # InGen
     def InGen(self, sourceDir, desDir):
-        words = []
+        # words = []
+        wordDict = {}
         plainTextFiles = []
 
         for fname in os.listdir(sourceDir):
             plainTextFiles.append(fname)
             file1 = open(sourceDir + "/" + fname, "r")
             try:
-                fread = file1.read()
+                freadOG = file1.read()
             except:
                 print(fname + " couldn't be red")
             else:
-                fread = ' '.join(fread.splitlines())
+                fread = ' '.join(freadOG.splitlines())
                 fread = ' '.join(fread.split())
-                for reg in ['\n', '/', '-', '!', ',', '.', '"', '(', ')', '*', '>', '<', '?', '\\', '_', '[', ']', '=', '@', ';', '+']:
+                for reg in ['{', '}', '\n', '/', '-', '#', '!', ',', '.', '"', '(', ')', '*', '>', '<', '?', '\\', '_',
+                            '[', '\'', ']', '=', '@', ';', '+', ':', '&']:
                     fread = fread.replace(reg, ' ')
-                words.append(list(dict.fromkeys(fread.split(" "))))
 
-                for key in words:
-                    if key.__len__() <= 2:
-                        words.remove(key)
-                    if key.__contains__("\\"):
-                        return
+                for word in fread.split(' '):
+                    word = word.lower()
+                    if word.__len__() > 3 and word.__len__() < 50 and not word.isnumeric():
+                        if word in wordDict:
+                            if fname not in wordDict[word][0]:
+                                wordDict[word][0].append(fname)
+                                wordDict[word][1] += 1
+                        else:
+                            wordDict.update({word: [[fname], 1]})
+
+                # words.append(list(dict.fromkeys(fread.split(" "))))
 
                 try:
-                    cipherTextt = self.aes.encrypt(fread).decode()
+                    cipherTextt = self.aes.encrypt(freadOG).decode()
                 except:
                     print(fname + " Couldn't be encrypted")
                 else:
@@ -52,43 +59,47 @@ class DataOwner:
         sse_keywords_id = 0
         csp_keywords_id = 0
         fileIndex = 0
+        print("Done with file encryption")
 
-        flatten_list = Counter(list(chain.from_iterable(words)))
+        # flatten_list = Counter(list(chain.from_iterable(words)))
+        # print(str(len(words)))
+
         sqlcmdscsp = []
         sqlcmdssse = []
+        pushCounter = 0
 
-        for fw in words:
-            for w in fw:
-                sse_keyword_numfiles = flatten_list[w]
-                sse_keyword_numsearch = 0
-                sse_keyword = hashlib.sha256(w.encode()).hexdigest()
-                kw = hashlib.sha256((sse_keyword + str(sse_keyword_numsearch)).encode()).hexdigest()
+        for key, value in wordDict.items():
+            # print(key)
+            sse_keyword_numfiles = value[1]
+            sse_keyword = hashlib.sha256(key.encode()).hexdigest()
+            kw = hashlib.sha256((sse_keyword + str(0)).encode()).hexdigest()
 
-                csp_keywords_address = hashlib.sha256((kw + str(sse_keyword_numfiles)).encode()).hexdigest()
-                csp_keyvalue = self.aes.encrypt(plainTextFiles[fileIndex] + str(sse_keyword_numsearch)).decode()
-                # sqlcmdscsp.append([csp_keywords_id, csp_keywords_address, csp_keyvalue])
-                # sqlcmdssse.append([sse_keywords_id, sse_keyword, sse_keyword_numfiles, sse_keyword_numsearch])
+            csp_keywords_address = hashlib.sha256((kw + str(sse_keyword_numfiles)).encode()).hexdigest()
+            csp_keyvalue = self.aes.encrypt("-".join(value[0]) + str(0)).decode()
 
-                # print([csp_keywords_id, str(csp_keywords_address), str(csp_keyvalue)])
+            sqlcmdscsp.append([csp_keywords_id, str(csp_keywords_address), str(csp_keyvalue)])
+            sqlcmdssse.append([sse_keywords_id, key, sse_keyword_numfiles, 0])
+            if pushCounter == 200000:
+                print("DB push event")
+                CSP.addSSECSPDB(self.connection, sqlcmdssse)
+                CSP.addSSEDB(self.connection, sqlcmdscsp)
+                sqlcmdscsp = []
+                sqlcmdssse = []
+                pushCounter = 0
 
-                sqlcmdscsp.append([csp_keywords_id, str(csp_keywords_address), str(csp_keyvalue)])
-                sqlcmdssse.append([sse_keywords_id, str(sse_keyword), sse_keyword_numfiles, sse_keyword_numsearch])
+            csp_keywords_id += 1
+            sse_keywords_id += 1
+            pushCounter += 1
 
-                csp_keywords_id += 1
-                sse_keywords_id += 1
-            fileIndex += 1
-
-        # CSP.addMultiToDB(self.connection, sqlcmds)
         CSP.addSSECSPDB(self.connection, sqlcmdssse)
         CSP.addSSEDB(self.connection, sqlcmdscsp)
-
-
+        sqlcmdscsp = []
+        sqlcmdssse = []
 
         for i in plainTextFiles:
             if os.path.exists(sourceDir + "/" + i):
                 # os.remove(d + "/" + i)
                 continue
-
 
     def AddFile(self):
         return

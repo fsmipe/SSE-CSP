@@ -4,6 +4,7 @@ import time
 
 def main():
     CSP.deleteCSPFiles("CSPFiles")
+    CSP.initialize()
     start = time.time()
     CSP.emptyDB()
     firstDO = DataOwner.DataOwner("exampleSeed1", "exampleSeed2")
