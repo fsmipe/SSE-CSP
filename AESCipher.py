@@ -2,7 +2,7 @@ import base64
 import hashlib
 from Crypto import Random
 from Crypto.Cipher import AES
-import re
+
 
 class AESCipher:
 
@@ -11,17 +11,22 @@ class AESCipher:
         self.TAkey = hashlib.sha256(keySeed2.encode()).digest()
         self.bs = 32
 
-    def encrypt(self, raw):
+    def encrypt(self, raw, authority):
         raw = self._pad(raw)
         iv = Random.new().read(AES.block_size)
-        cipher = AES.new(self.skey, AES.MODE_CBC, iv)
+        if authority == "TA":
+            cipher = AES.new(self.TAkey, AES.MODE_CBC, iv)
+        else:
+            cipher = AES.new(self.skey, AES.MODE_CBC, iv)
         return base64.b64encode(iv + cipher.encrypt(raw.encode()))
 
-
-    def decrypt(self, encData):
+    def decrypt(self, encData, authority):
         encData = base64.b64decode(encData)
         iv = encData[:16]
-        cipher = AES.new(self.skey, AES.MODE_CBC, iv)
+        if authority == "TA":
+            cipher = AES.new(self.TAkey, AES.MODE_CBC, iv)
+        else:
+            cipher = AES.new(self.skey, AES.MODE_CBC, iv)
         return self._unpad(cipher.decrypt(encData[16:])).decode('utf-8')
 
     def pad(self, s):
@@ -35,7 +40,7 @@ class AESCipher:
 
     @staticmethod
     def _unpad(s):
-        return s[:-ord(s[len(s)-1:])]
+        return s[:-ord(s[len(s) - 1:])]
 
     def getTAkey(self):
         return self.TAkey
