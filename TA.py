@@ -13,7 +13,7 @@ def addTaIndex(connection, cmds, seed):
 
     errors = 0
     for cmd in cmds:
-        cmd = aes.decrypt(cmd, "TA")
+        cmd = aes.decrypt(cmd, "TA").split("X")
         # print("(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")")
         # sqlcmd = "(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")"
         try:

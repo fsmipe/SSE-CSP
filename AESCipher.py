@@ -9,7 +9,7 @@ class AESCipher:
     def __init__(self, keySeed1, keySeed2):
         self.skey = hashlib.sha256(keySeed1.encode()).digest()
         self.TAkey = hashlib.sha256(keySeed2.encode()).digest()
-        self.bs = 32
+        self.bs = 16
 
     def encrypt(self, raw, authority):
         raw = self._pad(raw)

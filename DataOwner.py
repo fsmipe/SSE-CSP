@@ -45,22 +45,25 @@ class DataOwner:
             sqlcmdscsp.append([csp_keywords_id, str(csp_keywords_address), str(csp_keyvalue)])
 
             # this is No.Files and No.Search
-            tempTAIndex = "-".join([sse_keywords_id, key, value[1], str(value[2])])
-            TAIndexSearchandFiles.append(self.aes.encrypt(tempTAIndex, "TA").decode())
-
-            if pushCounter == 200000:
-                print("DB push event")
-                TA.addTaIndex(self.connection, TAIndexSearchandFiles, self.TAseed)
-                CSP.addSSEDB(self.connection, sqlcmdscsp)
-                sqlcmdscsp = []
-                TAIndexSearchandFiles = []
-                pushCounter = 0
+            tempTAIndex = "X".join([str(sse_keywords_id), key, str(value[1]), str(value[2])])
+            try:
+                TAIndexSearchandFiles.append(self.aes.encrypt(tempTAIndex, "TA").decode())
+            except:
+                print(key)
+            else:
+                if pushCounter == 200000:
+                    print("DB push event")
+                    TA.addTaIndex(self.connection, TAIndexSearchandFiles, self.TAseed)
+                    CSP.addSSEDB(self.connection, sqlcmdscsp)
+                    sqlcmdscsp = []
+                    TAIndexSearchandFiles = []
+                    pushCounter = 0
 
             csp_keywords_id += 1
             sse_keywords_id += 1
             pushCounter += 1
 
-        TA.addTaIndex(self.connection, TAIndexSearchandFiles)
+        TA.addTaIndex(self.connection, TAIndexSearchandFiles, self.TAseed)
         CSP.addSSEDB(self.connection, sqlcmdscsp)
         sqlcmdscsp = []
         TAIndexSearchandFiles = []
