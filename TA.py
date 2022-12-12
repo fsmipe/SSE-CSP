@@ -1,19 +1,25 @@
 from AESCipher import AESCipher
 import sqlite3
 from sqlite3 import Error
+import hashlib
+import sys
 
-DOkeys = {}
+TAModule = sys.modules[__name__]
+TAModule.DOWORD = None
+TAModule.DOKEYS = None
 
-def addDOTA(keyseed):
-    DOkeys.update({keyseed: AESCipher("notNeeded", keyseed)})
+
+def addDOTA(aes):
+    TAModule.DOKEYS = aes
 
 
-def addTaIndex(connection, cmds, seed):
-    aes = DOkeys[seed]
+def getDOTA():
+    return
 
-    errors = 0
+
+def addTaIndex(connection, cmds):
     for cmd in cmds:
-        cmd = aes.decrypt(cmd, "TA").split("X")
+        cmd = TAModule.DOKEYS.decrypt(cmd, "TA").split("X")
         # print("(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")")
         # sqlcmd = "(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")"
         try:
@@ -29,5 +35,69 @@ def addTaIndex(connection, cmds, seed):
             print(e)
             print()
 
-    print(errors)
     connection.commit()
+
+
+# word could be encrypted+decrypted but i don't see the benefit, not specified
+def getKWIndex(connection, key, word):
+    # here DO is identified with the key
+    try:
+        cursor = connection.cursor()
+        # query = """SELECT * FROM sse_keywords WHERE sse_keyword = {a}""".format(word)
+        cursor.execute("SELECT * FROM sse_keywords WHERE sse_keyword=?", (word,))
+        rows = cursor.fetchall()
+
+        tmp = []
+        for e in rows[0]:
+            tmp.append(e)
+
+        TAModule.DOWORD = tmp
+        return tmp
+
+    except Error as e:
+        print(e)
+
+
+def updateTAIndex(connection, key, word):
+    return
+
+
+def emptyDB():
+    connection = None
+    try:
+        connection = sqlite3.connect("SQL\sm_app.sqlite")
+        # print("Connection to SQLite DB successful")
+    except Error as e:
+        print(f"The error '{e}' occurred")
+
+    connection.cursor().execute("DELETE FROM sse_keywords;")
+
+    connection.commit()
+
+    return connection
+
+
+def processSearch(CSPdata):
+    # TODO: fix the zero
+    wordHash = hashlib.sha256(TAModule.DOWORD[1].encode()).hexdigest()
+    CSPkwj = wordHash + str(TAModule.DOWORD[3])
+    DOkwj = TAModule.DOKEYS.decrypt(CSPdata[0], "TA")
+
+    if DOkwj == CSPkwj:
+        print("all is bueno")
+        kwj = TAModule.DOKEYS.encrypt(wordHash + str(int(TAModule.DOWORD[3])), "TA").decode()
+        newkwj = TAModule.DOKEYS.encrypt(wordHash + str(int(TAModule.DOWORD[3]) + 1), "TA").decode()
+
+        Lta = []
+        for i in range(1, int(TAModule.DOWORD[2])):
+            addressThingy = hashlib.sha256((newkwj + ',' + str(i) + str(0)).encode()).hexdigest()
+            Lta.append(addressThingy)
+
+        return Lta
+
+    else:
+        print("fucked")
+        return 0
+
+
+

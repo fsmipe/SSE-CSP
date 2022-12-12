@@ -10,13 +10,12 @@ import TA
 
 class DataOwner:
     # This operates as KeyGen function
-    def __init__(self, seed1, seed2):
-        self.aes = AESCipher(seed1, seed2)
+    def __init__(self, aes, seed2):
+        self.aes = aes
         self.TAseed = seed2
         self.allMap = {}
         self.connection = CSP.initialize()
         self.wordDict = {}
-
 
     # InGen
     def InGen(self, sourceDir, desDir):
@@ -38,7 +37,7 @@ class DataOwner:
             wordHash = hashlib.sha256(key.encode()).hexdigest()
             kwij = self.aes.encrypt(wordHash + str(value[2]), "TA").decode()
 
-            csp_keywords_address = hashlib.sha256((kwij + str(value[1]) + "-" + str(value[2])).encode()).hexdigest()
+            csp_keywords_address = hashlib.sha256((kwij + ',' + str(value[1]) + str(0)).encode()).hexdigest()
             csp_keyvalue = self.aes.encrypt("-".join(value[0]) + str(value[1]), "DO").decode()
 
             # CAP AllMap, file sent to CSP is simulated with just a different folder
@@ -53,7 +52,7 @@ class DataOwner:
             else:
                 if pushCounter == 200000:
                     print("DB push event")
-                    TA.addTaIndex(self.connection, TAIndexSearchandFiles, self.TAseed)
+                    TA.addTaIndex(self.connection, TAIndexSearchandFiles)
                     CSP.addSSEDB(self.connection, sqlcmdscsp)
                     sqlcmdscsp = []
                     TAIndexSearchandFiles = []
@@ -63,11 +62,10 @@ class DataOwner:
             sse_keywords_id += 1
             pushCounter += 1
 
-        TA.addTaIndex(self.connection, TAIndexSearchandFiles, self.TAseed)
+        TA.addTaIndex(self.connection, TAIndexSearchandFiles)
         CSP.addSSEDB(self.connection, sqlcmdscsp)
         sqlcmdscsp = []
         TAIndexSearchandFiles = []
-
 
     def AddFileInit(self, fname, sourceDir, desDir):
         file1 = open(sourceDir + "/" + fname, "r")
@@ -79,12 +77,12 @@ class DataOwner:
             fread = ' '.join(freadOG.splitlines())
             fread = ' '.join(fread.split())
             for reg in ['{', '}', '\n', '/', '-', '#', '!', ',', '.', '"', '(', ')', '*', '>', '<', '?', '\\', '_',
-                        '[', '\'', ']', '=', '@', ';', '+', ':', '&', '´', '|']:
+                        '[', '\'', ']', '=', '@', ';', '+', ':', '&', '´', '|', '`', '$', '¿', '»']:
                 fread = fread.replace(reg, ' ')
 
             for word in fread.split(' '):
                 word = word.lower()
-                if 3 < word.__len__() < 50 and not word.isnumeric():
+                if 2 < word.__len__() < 50:  # and not word.isnumeric():
                     if word in self.wordDict:
                         if fname not in self.wordDict[word][0]:
                             self.wordDict[word][0].append(fname)
@@ -107,5 +105,20 @@ class DataOwner:
 
     # HERE FILE DELETION
 
+    def getKWIndex(self, word):
+        # index in form of (0, 'the', 10, 0)
+        index = TA.getKWIndex(self.connection, self.TAseed, word)
+
+        wordHash = hashlib.sha256(index[1].encode()).hexdigest()
+        kwj = self.aes.encrypt(wordHash + str(int(index[3])), "TA").decode()
+        newkwj = self.aes.encrypt(wordHash + str(int(index[3]) + 1), "TA").decode()
+
+        Lu = []
+        for i in range(1, int(index[2])):
+            addressThingy = hashlib.sha256((newkwj + ',' + str(i) + str(0)).encode()).hexdigest()
+            Lu.append(addressThingy)
+
+        qAddress = CSP.forwardCSPtoTA([kwj, int(index[2]), Lu])
+        # send kwj, no.files, LU to CSP
 
 

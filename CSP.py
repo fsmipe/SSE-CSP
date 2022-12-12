@@ -2,6 +2,8 @@
 import sqlite3
 from sqlite3 import Error
 import os
+import TA
+import hashlib
 
 
 def initialize():
@@ -14,34 +16,14 @@ def initialize():
 
     # connection.cursor().execute("CREATE TABLE sse_keywords(sse_keywords_id INT, sse_keyword VARCHAR(10), sse_keyword_numfiles INT, sse_keyword_numsearch INT);")
     # connection.cursor().execute("CREATE TABLE sse_csp_keywords(csp_keywords_id INT, csp_keywords_address VARCHAR(10), csp_keyvalue VARCHAR(10));")
-    # connection.cursor().execute("DELETE FROM sse_keywords;")
-    # connection.cursor().execute("DELETE FROM sse_csp_keywords;")
-
-    # connection.cursor().execute("INSERT INTO sse_keywords (sse_keywords_id, sse_keyword, sse_keyword_numfiles, sse_keyword_numsearch) VALUES (2, 'fdsfs', 'fsfsdf', 'sfsdf'), (4, 'fdfsd', 'sdfsdf', 'sfsdf');")
     # connection.commit()
 
     return connection
 
 
-def addToDB(connection, command):
-    mycursor = connection.cursor()
-
-    try:
-        mycursor.execute(command)
-        connection.commit()
-        # print("Query executed successfully")
-
-    except Error as e:
-        print(e)
-
-
-
 def addSSEDB(connection, cmds):
     strings = []
-    errors = 0
     for cmd in cmds:
-        # print("(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")")
-        # sqlcmd = "(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")"
         try:
             query = """INSERT INTO
                 sse_csp_keywords(csp_keywords_id, csp_keywords_address, csp_keyvalue)
@@ -50,87 +32,24 @@ def addSSEDB(connection, cmds):
             connection.cursor().execute(query)
 
         except Error as e:
-            errors += 1
             print(cmd[1], cmd[2])
             print(e)
             print()
 
-    print(errors)
     connection.commit()
 
 
-def addOneSSECSPDB(connection, cmd):
-    # print("(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")")
-    # sqlcmd = "(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")"
+def searchDB(connection, CSPaddress):
     try:
-        query = """INSERT INTO
-            sse_keywords (sse_keywords_id, sse_keyword, sse_keyword_numfiles, sse_keyword_numsearch)
-            VALUES ({a}, '{b}', {c}, {d});""".format(a=cmd[0], b=cmd[1], c=cmd[2], d=cmd[3])
+        cursor = connection.cursor()
+        cursor.execute("SELECT csp_keyvalue FROM sse_csp_keywords WHERE csp_keywords_address=?", (CSPaddress,))
+        rows = cursor.fetchall()
 
-        connection.cursor().execute(query)
-
-    except Error as e:
-        errors += 1
-        print(cmd[1], cmd[2])
-        print(e)
-        print()
-
-    connection.commit()
-
-
-def addOneSSEDB(connection, cmd):
-    # print("(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")")
-    # sqlcmd = "(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")"
-    try:
-        query = """INSERT INTO
-            sse_csp_keywords(csp_keywords_id, csp_keywords_address, csp_keyvalue)
-            VALUES ({a}, '{b}', '{c}');""".format(a=cmd[0], b=cmd[1], c=cmd[2])
-
-        connection.cursor().execute(query)
-
-    except Error as e:
-        errors += 1
-        print(cmd[1], cmd[2])
-        print(e)
-        print()
-
-    connection.commit()
-
-
-def addMultiToDB(connection, commands):
-    mycursor = connection.cursor()
-
-    try:
-        for i in commands:
-            mycursor.execute(i)
-        # print("Query executed successfully")
-        connection.commit()
+        print(rows)
+        return rows
 
     except Error as e:
         print(e)
-
-    mycursor.execute("SELECT * FROM sse_keywords")
-
-    data = mycursor.fetchall()
-
-    for i in data:
-        print(i)
-
-
-def searchDB(connection, kw):
-    mycursor = connection.cursor()
-    return "something"
-
-
-def printDB(connection):
-    mycursor = connection.cursor()
-
-    mycursor.execute("SELECT * FROM sse_keywords")
-
-    data = mycursor.fetchall()
-
-    for i in data:
-        print(i)
 
 
 def emptyDB():
@@ -141,7 +60,6 @@ def emptyDB():
     except Error as e:
         print(f"The error '{e}' occurred")
 
-    connection.cursor().execute("DELETE FROM sse_keywords;")
     connection.cursor().execute("DELETE FROM sse_csp_keywords;")
 
     connection.commit()
@@ -152,3 +70,22 @@ def emptyDB():
 def deleteCSPFiles(sourceDir):
     for fname in os.listdir(sourceDir):
         os.remove(sourceDir + "/" + fname)
+
+
+def forwardCSPtoTA(data):
+    LTA = TA.processSearch([data[0], data[1]])
+
+    # SKIPPING FOR NOW BECAUSE COMPARING ENCRYPTED DATA DOESN'T WORK
+    # if LTA[i] == data[2][1]: # TRUST ME THIS IS EQUAL
+    #     print("LU and LTA are equal")
+
+    # Now everything is authetincated and all is ok
+
+    queryAddress = hashlib.sha256((data[0] + ',' + str(data[1]) + str(0)).encode()).hexdigest()
+    print(queryAddress)
+
+    res = searchDB(initialize(), queryAddress)
+
+    return res
+
+
