@@ -11,7 +11,7 @@ import TA
 class DataOwner:
     # This operates as KeyGen function
     def __init__(self, aes, seed2):
-        self.aes = aes
+        self.aes = AESCipher("a", "a")
         self.TAseed = seed2
         self.allMap = {}
         self.connection = CSP.initialize()
@@ -38,7 +38,7 @@ class DataOwner:
             kwij = self.aes.encrypt(wordHash + str(value[2]), "TA").decode()
 
             csp_keywords_address = hashlib.sha256((kwij + ',' + str(value[1]) + str(0)).encode()).hexdigest()
-            csp_keyvalue = self.aes.encrypt("-".join(value[0]) + str(value[1]), "DO").decode()
+            csp_keyvalue = self.aes.encrypt("-".join(value[0]) + "-" + str(value[1]), "DO").decode()
 
             # CAP AllMap, file sent to CSP is simulated with just a different folder
             sqlcmdscsp.append([csp_keywords_id, str(csp_keywords_address), str(csp_keyvalue)])
@@ -52,7 +52,7 @@ class DataOwner:
             else:
                 if pushCounter == 200000:
                     print("DB push event")
-                    TA.addTaIndex(self.connection, TAIndexSearchandFiles)
+                    TA.addTaIndex(self.connection, TAIndexSearchandFiles, self.TAseed)
                     CSP.addSSEDB(self.connection, sqlcmdscsp)
                     sqlcmdscsp = []
                     TAIndexSearchandFiles = []
@@ -62,7 +62,7 @@ class DataOwner:
             sse_keywords_id += 1
             pushCounter += 1
 
-        TA.addTaIndex(self.connection, TAIndexSearchandFiles)
+        TA.addTaIndex(self.connection, TAIndexSearchandFiles, self.TAseed)
         CSP.addSSEDB(self.connection, sqlcmdscsp)
         sqlcmdscsp = []
         TAIndexSearchandFiles = []
@@ -118,7 +118,11 @@ class DataOwner:
             addressThingy = hashlib.sha256((newkwj + ',' + str(i) + str(0)).encode()).hexdigest()
             Lu.append(addressThingy)
 
-        qAddress = CSP.forwardCSPtoTA([kwj, int(index[2]), Lu])
         # send kwj, no.files, LU to CSP
+        qAddress = CSP.forwardCSPtoTA([kwj, int(index[2]), Lu])
+        files = self.aes.decrypt(qAddress[0], "DO")
+        files = files.split("-")
+        print(files)
+
 
 

@@ -10,14 +10,14 @@ TAModule.DOKEYS = None
 
 
 def addDOTA(aes):
-    TAModule.DOKEYS = aes
+    TAModule.DOKEYS = AESCipher("notNeeded", aes)
 
 
 def getDOTA():
     return
 
 
-def addTaIndex(connection, cmds):
+def addTaIndex(connection, cmds, seed):
     for cmd in cmds:
         cmd = TAModule.DOKEYS.decrypt(cmd, "TA").split("X")
         # print("(" + str(cmd[0]) + ", " + str(cmd[1])[2:-1] + ", " + str(cmd[2]) + ", " + str(cmd[3]) + ")")
@@ -30,7 +30,6 @@ def addTaIndex(connection, cmds):
             connection.cursor().execute(query)
 
         except Error as e:
-            errors += 1
             print(cmd[1], cmd[2])
             print(e)
             print()
@@ -84,7 +83,6 @@ def processSearch(CSPdata):
     DOkwj = TAModule.DOKEYS.decrypt(CSPdata[0], "TA")
 
     if DOkwj == CSPkwj:
-        print("all is bueno")
         kwj = TAModule.DOKEYS.encrypt(wordHash + str(int(TAModule.DOWORD[3])), "TA").decode()
         newkwj = TAModule.DOKEYS.encrypt(wordHash + str(int(TAModule.DOWORD[3]) + 1), "TA").decode()
 
@@ -96,7 +94,7 @@ def processSearch(CSPdata):
         return Lta
 
     else:
-        print("fucked")
+        print("Word encryption doesn't match, key is wrong or no authority")
         return 0
 
 

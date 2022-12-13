@@ -27,24 +27,23 @@ def main():
             TA.emptyDB()
             CSP.deleteCSPFiles("CSPFiles")
 
-        elif i[0] == "emptyCSP" and i.__len__() == 1:
-            CSP.emptyDB()
+        elif i[0] == "emptyCSPFiles" and i.__len__() == 1:
             CSP.deleteCSPFiles("CSPFiles")
 
-        elif i[0] == "emptyTA" and i.__len__() == 1:
+        elif i[0] == "emptyDB" and i.__len__() == 1:
             TA.emptyDB()
-
+            CSP.emptyDB()
 
         elif i[0] == "nDO" and i.__len__() == 1:
             do = input("Give DataOwner 2 key seeds: ")
-            do = do.split(" ")
-            aes = AESCipher(do[0], do[1])
 
-            firstDO = DataOwner.DataOwner(aes, do[1])
-            TA.addDOTA(aes)
             start = time.time()
+            do = do.split(" ")
+            firstDO = DataOwner.DataOwner(do[0], do[1])
+            TA.addDOTA(do[0])
             firstDO.InGen("LocalFiles", "CSPFiles")
             end = time.time()
+
             print("Initialization took: " + str(end - start) + " seconds")
             dataOwners.append(firstDO)
 
@@ -61,8 +60,12 @@ def main():
             continue
 
         elif i[0] == "search" and i.__len__() == 2:
+            start = time.time()
             word = i[1]
             dataOwners[0].getKWIndex(word)
+            end = time.time()
+
+            print("Search took: " + str(end - start) + " seconds")
 
 
         elif i[0] == "q" and i.__len__() == 1:

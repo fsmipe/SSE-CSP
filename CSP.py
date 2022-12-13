@@ -45,8 +45,11 @@ def searchDB(connection, CSPaddress):
         cursor.execute("SELECT csp_keyvalue FROM sse_csp_keywords WHERE csp_keywords_address=?", (CSPaddress,))
         rows = cursor.fetchall()
 
-        print(rows)
-        return rows
+        tmp = []
+        for address in rows:
+            tmp.append(address)
+
+        return tmp[0]
 
     except Error as e:
         print(e)
@@ -75,17 +78,12 @@ def deleteCSPFiles(sourceDir):
 def forwardCSPtoTA(data):
     LTA = TA.processSearch([data[0], data[1]])
 
-    # SKIPPING FOR NOW BECAUSE COMPARING ENCRYPTED DATA DOESN'T WORK
-    # if LTA[i] == data[2][1]: # TRUST ME THIS IS EQUAL
-    #     print("LU and LTA are equal")
+    if LTA == data[2]:
+        print("Address space is valid")
+        queryAddress = hashlib.sha256((data[0] + ',' + str(data[1]) + str(0)).encode()).hexdigest()
+        res = searchDB(initialize(), queryAddress)
+        return res
 
-    # Now everything is authetincated and all is ok
 
-    queryAddress = hashlib.sha256((data[0] + ',' + str(data[1]) + str(0)).encode()).hexdigest()
-    print(queryAddress)
-
-    res = searchDB(initialize(), queryAddress)
-
-    return res
 
 
