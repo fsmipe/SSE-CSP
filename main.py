@@ -27,7 +27,6 @@ def main():
         elif i[0] == "emptyTA" and i.__len__() == 1:
             TA.emptyDB()
 
-
         # newDataOwner/existingDataOwner, this reads local files and creates DB
         elif i[0] == "addDO" and i.__len__() == 1:
             do = input("Give DataOwner 2 key seeds: ")

@@ -1,4 +1,4 @@
-# Simulates DataOwner/User, can be multiple classes
+# Simulates DataOwner/User, can be instanses of class
 import CSP
 from AESCipher import AESCipher
 import os
@@ -15,6 +15,8 @@ class DataOwner:
         # this is local No.Fiels and No.Search
         self.wordDict = {}
 
+
+    # EXTRA this allows file addition after the first databse run
     def updateDataTOCSPTA(self, d):
         sqlcmdscsp = []
         TAIndexSearchandFiles = []
@@ -52,6 +54,8 @@ class DataOwner:
         sqlcmdscsp = []
         TAIndexSearchandFiles = []
 
+
+    # sends Dict, No.Files and No.Search to TA and CSP
     def pushDataTOCSPTA(self, d):
         sqlcmdscsp = []
         TAIndexSearchandFiles = []
@@ -89,6 +93,8 @@ class DataOwner:
         sqlcmdscsp = []
         TAIndexSearchandFiles = []
 
+
+    # EXTRA this allows folder addition after the first databse run
     def addFolder(self, sourceDir, desDir):
         for fname in os.listdir(sourceDir):
             newWords = self.addFile(fname, sourceDir, desDir)
@@ -102,6 +108,8 @@ class DataOwner:
             for key, value in newWords[1].items():
                 self.wordDict.update({key: value})
 
+
+    # EXTRA this allows file addition after the first databse run
     def addFile(self, fname, sourceDir, desDir):
         file1 = open(sourceDir + "/" + fname, "r")
         try:
@@ -152,7 +160,7 @@ class DataOwner:
 
             return [wordDictUpdate, wordDictNew]
 
-    # InGen
+    # InGen, as specified in the document
     def InGenFolder(self, sourceDir, desDir):
 
         for fname in os.listdir(sourceDir):
@@ -163,6 +171,12 @@ class DataOwner:
 
         self.pushDataTOCSPTA(self.wordDict)
 
+
+    # Files are encrypted and parsed, keywords screened, calculated and saved
+    # Keywords are screened and parsed more carefully than in the paper, so even though unique keyword count is low
+    # overall keyword appearance is still high
+
+    # All special marks, are removed, everything is lowercase
     def AddFileInGenFolder(self, fname, sourceDir, desDir):
         file1 = open(sourceDir + "/" + fname, "r")
         try:
@@ -200,8 +214,12 @@ class DataOwner:
                 # except:
                 #     print(fname + " couldn't be deleted")
 
+
+    # As specified in the paper, No.files and No.Search is retrieved
+    # Ta No.Search is updated
+    # word address calculated and ultimately data is retrieved
+    # user is asked if data is wanted to be decrypted
     def search(self, word, desDir, sourceDir):
-        # index in form of ('the', 10, 0)
         word = word.lower()
         index = TA.getKWIndex(self.connection, self.TAseed, word)
 
