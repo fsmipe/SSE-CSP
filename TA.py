@@ -73,6 +73,7 @@ def updateTAIndex(connection, word):
     connection.commit()
 
 
+# Extra
 def updateTAIndex2(connection, cmds):
     for cmd in cmds:
         cmd = TAModule.DOKEYS.decrypt(cmd, "TA").split("X")
