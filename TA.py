@@ -47,6 +47,7 @@ def getKWIndex(connection, key, word):
             print("Word " + word + " isn't in the databases files")
             return 0
 
+        print(rows)
         tmp = []
         for e in rows[0]:
             tmp.append(e)
@@ -68,6 +69,24 @@ def updateTAIndex(connection, word):
 
     except Error as e:
         print(e)
+
+    connection.commit()
+
+
+def updateTAIndex2(connection, cmds):
+    for cmd in cmds:
+        cmd = TAModule.DOKEYS.decrypt(cmd, "TA").split("X")
+        try:
+            query = """UPDATE sse_keywords 
+            SET sse_keyword_numfiles={a},
+            sse_keyword_numsearch={b}
+            WHERE sse_keyword='{c}'""".format(a=cmd[1], b=cmd[2], c=cmd[0])
+            connection.cursor().execute(query)
+
+        except Error as e:
+            print(cmd[1], cmd[2])
+            print(e)
+            print()
 
     connection.commit()
 

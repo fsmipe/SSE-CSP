@@ -22,7 +22,6 @@ def initialize():
 
 
 def addSSEDB(connection, cmds):
-    strings = []
     for cmd in cmds:
         try:
             query = """INSERT INTO
@@ -81,7 +80,7 @@ def forwardCSPtoTA(kwj, NoFiles, Lu):
         return res
 
     else:
-        return 0;
+        return 0
 
 
 def updateSSEDB(connection, oldAddress, newAddress):
@@ -92,5 +91,20 @@ def updateSSEDB(connection, oldAddress, newAddress):
 
     except Error as e:
         print(e)
+
+    connection.commit()
+
+
+def updateSSEDB2(connection, cmds):
+    for cmd in cmds:
+        try:
+            query = """UPDATE sse_csp_keywords
+            SET csp_keywords_address='{a}',
+            csp_keyvalue='{b}'
+            WHERE csp_keywords_address='{c}'""".format(a=cmd[1], b=cmd[2], c=cmd[0])
+            connection.cursor().execute(query)
+
+        except Error as e:
+            print(e)
 
     connection.commit()

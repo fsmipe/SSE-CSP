@@ -43,10 +43,13 @@ def main():
             end = time.time()
             print("Initialization took: " + str(end - start) + " seconds")
 
-        elif i[0] == "addFile" and i.__len__() == 3:
-            do = i[2]
-            file = i[1]
-            continue
+        elif i[0] == "addFolderEX" and i.__len__() == 2:
+            f = i[1]
+            start = time.time()
+            dataOwners[0].addFolder(f, DESTINATIONFOLDER)
+            end = time.time()
+            print("DB update took: " + str(end - start) + " seconds")
+
 
         elif i[0] == "search" and i.__len__() == 2:
             start = time.time()
