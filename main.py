@@ -54,7 +54,7 @@ def main():
         elif i[0] == "search" and i.__len__() == 2:
             start = time.time()
             word = i[1]
-            dataOwners[0].search(word, "tmp", DESTINATIONFOLDER)
+            dataOwners[0].search(word, "LocalFiles", DESTINATIONFOLDER)
             end = time.time()
 
             print("Search took: " + str(end - start) + " seconds")
