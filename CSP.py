@@ -26,8 +26,8 @@ def addSSEDB(connection, cmds):
     for cmd in cmds:
         try:
             query = """INSERT INTO
-                sse_csp_keywords(csp_keywords_id, csp_keywords_address, csp_keyvalue)
-                VALUES ({a}, '{b}', '{c}');""".format(a=cmd[0], b=cmd[1], c=cmd[2])
+                sse_csp_keywords(csp_keywords_address, csp_keyvalue)
+                VALUES ('{a}', '{b}');""".format(a=cmd[0], b=cmd[1])
 
             connection.cursor().execute(query)
 
@@ -59,15 +59,11 @@ def emptyDB():
     connection = None
     try:
         connection = sqlite3.connect("SQL\sm_app.sqlite")
-        # print("Connection to SQLite DB successful")
+
+        connection.cursor().execute("DELETE FROM sse_csp_keywords;")
+        connection.commit()
     except Error as e:
         print(f"The error '{e}' occurred")
-
-    connection.cursor().execute("DELETE FROM sse_csp_keywords;")
-
-    connection.commit()
-
-    return connection
 
 
 def deleteCSPFiles(sourceDir):
@@ -75,15 +71,26 @@ def deleteCSPFiles(sourceDir):
         os.remove(sourceDir + "/" + fname)
 
 
-def forwardCSPtoTA(data):
-    LTA = TA.processSearch([data[0], data[1]])
+def forwardCSPtoTA(kwj, NoFiles, Lu):
+    LTA = TA.processSearch(kwj, NoFiles)
 
-    if LTA == data[2]:
+    if LTA == Lu:
         print("Address space is valid")
-        queryAddress = hashlib.sha256((data[0] + ',' + str(data[1]) + str(0)).encode()).hexdigest()
+        queryAddress = hashlib.sha256((kwj + ',' + str(NoFiles) + str(0)).encode()).hexdigest()
         res = searchDB(initialize(), queryAddress)
         return res
 
+    else:
+        return 0;
 
 
+def updateSSEDB(connection, oldAddress, newAddress):
+    try:
+        query = """UPDATE sse_csp_keywords SET csp_keywords_address='{a}'
+        WHERE csp_keywords_address='{b}'""".format(a=newAddress, b=oldAddress)
+        connection.cursor().execute(query)
 
+    except Error as e:
+        print(e)
+
+    connection.commit()

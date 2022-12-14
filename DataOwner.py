@@ -1,33 +1,28 @@
+# Simulates DataOwner/User, can be multiple classes
 import CSP
 from AESCipher import AESCipher
 import os
-from collections import Counter
-from itertools import chain
 import hashlib
-import string
 import TA
 
 
 class DataOwner:
     # This operates as KeyGen function
-    def __init__(self, aes, seed2):
-        self.aes = AESCipher("a", "a")
+    def __init__(self, seed1, seed2):
+        self.aes = AESCipher(seed1, seed2)
         self.TAseed = seed2
-        self.allMap = {}
         self.connection = CSP.initialize()
+        # this is local No.Fiels and No.Search
         self.wordDict = {}
 
     # InGen
-    def InGen(self, sourceDir, desDir):
+    def InGenFolder(self, sourceDir, desDir):
 
         for fname in os.listdir(sourceDir):
-            self.AddFileInit(fname, sourceDir, desDir)
+            self.AddFileInGenFolder(fname, sourceDir, desDir)
 
         print("Done with file encryption")
         print(str(self.wordDict.__len__()) + " unique keywords in files")
-
-        sse_keywords_id = 0
-        csp_keywords_id = 0
 
         sqlcmdscsp = []
         TAIndexSearchandFiles = []
@@ -38,36 +33,34 @@ class DataOwner:
             kwij = self.aes.encrypt(wordHash + str(value[2]), "TA").decode()
 
             csp_keywords_address = hashlib.sha256((kwij + ',' + str(value[1]) + str(0)).encode()).hexdigest()
-            csp_keyvalue = self.aes.encrypt("-".join(value[0]) + "-" + str(value[1]), "DO").decode()
+            csp_keyvalue = self.aes.encrypt("-".join(value[0]) + "-" + str(value[1]), "DO", True).decode()
 
             # CAP AllMap, file sent to CSP is simulated with just a different folder
-            sqlcmdscsp.append([csp_keywords_id, str(csp_keywords_address), str(csp_keyvalue)])
+            sqlcmdscsp.append([str(csp_keywords_address), str(csp_keyvalue)])
 
             # this is No.Files and No.Search
-            tempTAIndex = "X".join([str(sse_keywords_id), key, str(value[1]), str(value[2])])
+            tempTAIndex = "X".join([key, str(value[1]), str(value[2])])
             try:
-                TAIndexSearchandFiles.append(self.aes.encrypt(tempTAIndex, "TA").decode())
+                TAIndexSearchandFiles.append(self.aes.encrypt(tempTAIndex, "TA", True).decode())
             except:
                 print(key)
             else:
                 if pushCounter == 200000:
                     print("DB push event")
-                    TA.addTaIndex(self.connection, TAIndexSearchandFiles, self.TAseed)
+                    TA.addTaIndex(self.connection, TAIndexSearchandFiles)
                     CSP.addSSEDB(self.connection, sqlcmdscsp)
                     sqlcmdscsp = []
                     TAIndexSearchandFiles = []
                     pushCounter = 0
 
-            csp_keywords_id += 1
-            sse_keywords_id += 1
             pushCounter += 1
 
-        TA.addTaIndex(self.connection, TAIndexSearchandFiles, self.TAseed)
+        TA.addTaIndex(self.connection, TAIndexSearchandFiles)
         CSP.addSSEDB(self.connection, sqlcmdscsp)
         sqlcmdscsp = []
         TAIndexSearchandFiles = []
 
-    def AddFileInit(self, fname, sourceDir, desDir):
+    def AddFileInGenFolder(self, fname, sourceDir, desDir):
         file1 = open(sourceDir + "/" + fname, "r")
         try:
             freadOG = file1.read()
@@ -91,38 +84,67 @@ class DataOwner:
                     else:
                         self.wordDict.update({word: [[fname], 1, 0]})
 
-            # words.append(list(dict.fromkeys(fread.split(" "))))
-
             try:
-                cipherTextt = self.aes.encrypt(freadOG, "DO").decode()
+                cipherTextt = self.aes.encrypt(freadOG, "DO", True).decode()
             except:
                 print(fname + " Couldn't be encrypted")
             else:
                 file2 = open(desDir + "/" + fname, "w")
-                # print(fname + " " + str(len(fread)))
                 file2.write(cipherTextt)
                 file2.close()
+                # os.remove(sourceDir + "/" + fname)
 
-    # HERE FILE DELETION
+    def addFile(self, fname, sourceDir, desDir):
+        return
 
-    def getKWIndex(self, word):
-        # index in form of (0, 'the', 10, 0)
+    def search(self, word, desDir, sourceDir):
+        # index in form of ('the', 10, 0)
+        word = word.lower()
         index = TA.getKWIndex(self.connection, self.TAseed, word)
 
-        wordHash = hashlib.sha256(index[1].encode()).hexdigest()
-        kwj = self.aes.encrypt(wordHash + str(int(index[3])), "TA").decode()
-        newkwj = self.aes.encrypt(wordHash + str(int(index[3]) + 1), "TA").decode()
+        if index == 0:
+            return
+
+        TA.updateTAIndex(self.connection, word)
+
+        wordHash = hashlib.sha256(index[0].encode()).hexdigest()
+        kwj = self.aes.encrypt(wordHash + str(int(index[2])), "TA").decode()
+        newkwj = self.aes.encrypt(wordHash + str(int(index[2]) + 1), "TA").decode()
 
         Lu = []
-        for i in range(1, int(index[2])):
+        for i in range(1, int(index[1])):
             addressThingy = hashlib.sha256((newkwj + ',' + str(i) + str(0)).encode()).hexdigest()
             Lu.append(addressThingy)
 
         # send kwj, no.files, LU to CSP
-        qAddress = CSP.forwardCSPtoTA([kwj, int(index[2]), Lu])
-        files = self.aes.decrypt(qAddress[0], "DO")
-        files = files.split("-")
-        print(files)
+        qAddress = CSP.forwardCSPtoTA(kwj, int(index[1]), Lu)
+        if qAddress != 0:
+            files = self.aes.decrypt(qAddress[0], "DO")
+            files = files.split("-")
+            files = files[:-1]
+            print(files)
+            i = input("Dow you want to decrypt these files?: (y/n)")
+
+            oldAddress = hashlib.sha256((kwj + ',' + str(index[1]) + str(0)).encode()).hexdigest()
+            newAddress = hashlib.sha256((newkwj + ',' + str(index[1]) + str(0)).encode()).hexdigest()
+
+            CSP.updateSSEDB(self.connection, oldAddress, newAddress)
+
+            if i == "y":
+                for fname in files:
+                    try:
+                        file1 = open(sourceDir + "/" + fname, "r")
+                        freadOG = file1.read()
+                        cipherTextt = self.aes.decrypt(freadOG, "DO")
+                    except:
+                        print(fname + " Couldn't be decrypted")
+                    else:
+                        file2 = open(desDir + "/" + fname, "w")
+                        file2.write(cipherTextt)
+                        file2.close()
+
+
+
 
 
 
