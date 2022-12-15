@@ -5,6 +5,10 @@ Mikael Peltoketo 290513
 Project is run from main.py, wtih python 3
 PyCrypto and AES libraries might have to be installed
 
+## Demo
+Video demonstrating basic functionality:
+https://youtu.be/WUrR-cua4-w
+
 ## Databse
 Download it here:
 https://tuni-my.sharepoint.com/:f:/g/personal/mikael_peltoketo_tuni_fi/EuhYjXJY2YxGqdXJ520fEK0BqQyEGHFaV97uedLYoXzyWg?e=nK0f7s
